@@ -1,4 +1,5 @@
 AutoWrite
+
 Semi-automatic output paths in [The Foundry's Nuke](http://www.thefoundry.co.uk/products/nuke/). A tool by [Tim BOWMAN](http://netherlogic.com).
 
 #The gist: 
