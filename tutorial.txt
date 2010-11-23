@@ -34,4 +34,45 @@ Script Name: [value script]
 """
 w.knob('label').setValue(feedback)
 
+The next step is to figure out what expressions you need to use in the path fragments tab to hack your useful bits out of your path. Here's what a common path loks like for me:
+
+/Volumes/PICO/show/testproj/abc/abc123/nuke/abc123_comp_v01.nk
+
+And this is what I use to create each chunk:
+
+Project Root: 
+In this case, the show root directory consists of the first 5 path components, so I can just split them, limit the range and re-join.  
+
+[join [lrange [split [value root.name] / ] 0 4 ] / ]
+
+If your facility uses environment variables, you may be able to use something nicely simple like [getenv SHOW_DIR].
+
+Path component #6 is my sequence abbreviation, so Sequence goes like this:
+
+[lrange [split [value root.name] / ] 5 5 ]
+
+Repeat that idea for Shot Name:
+
+[lrange [split [value root.name] / ] 6 6 ]
+
+Script Name is nicely simple -- we can just take the last path component and split the extensinon off of it.
+
+[file rootname [file tail [value root.name] ] ]
+
+Once you've figured these out for your facility, you can put them in the knobs during creation. So now the section that created the tab should look like this:
+
+t = nuke.Tab_Knob("Path Fragments")
+w.addKnob(t)
+w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', '[join [lrange [split [value root.name] / ] 0 4 ] / ]'))
+w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', '[lrange [split [value root.name] / ] 5 5 ]'))
+w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', '[lrange [split [value root.name] / ] 6 6 ]'))
+w.addKnob(nuke.EvalString_Knob('script', 'Script Name', '[file rootname [file tail [value root.name] ] ]'))
+
+All that's left is to re-assemble the path components in the file knob:
+
+output_path = "[value proj_root]/[value seq]/[value shot]/comps/[value script]/[value input.width]x[value input.height]/[value script].%04d.dpx"
+w.knob('file').fromScript(output_path)
+
+And that's it. Running this script will create and customize a Write node and set it to follow along as the script's name is updated.
+
 
