@@ -9,9 +9,15 @@ Create output paths by parsing the Nuke script name and path.
 Most of the information needed for the output of a Nuke script is contained in it's name. We can reduce manual name changing on behalf of the artists and simultaneously increase consistency by creating a Write node that creates (and updates) it's own output path by parsing the script's name.
 
 #The details:
-Most projects at most facilities will have a common set of path fragments. My list includes: project root, sequence name (or abbreviation), shot name. We will create a new tab  on the Write node to help us isolate each fragment so we can easily re-assemble them for the output path. This tab will contain knobs for each path fragment. 
+Most projects at a facility will use a standardized file hierarchy, which means that a Nuke script's name and path on the filesystem will often contain all the information needed to define the output destination for it's render. As an example, here is a path from one of my comp scripts:
 
-Since each facility creates their own file structure, I will set it up for my structure and then leave it to you how to parse your own path for each fragment.
+/Volumes/PICO/show/testproj/abc/abc123/nuke/abc123_comp_v01.nk
+
+From this path, we can see that I have a project called "testproj" that has a sequence with an abbreviation "abc" and that there is a shot called "abc123" in that sequence. I am working on composite version #1 on that shot.
+
+What I do to create an AutoWrite is add a tab to the Write node where I break down these path elements in four knobs: project root, sequence name (or abbreviation), shot name and script name. These knobs are then re-assembled to create the AutoWrite's output path.
+
+Since each facility creates their own file structure, I have set it up for my own structure and I leave it to you to parse your own paths.
 
 # LICENSE
 Copyright (c) 2010 Tim BOWMAN
