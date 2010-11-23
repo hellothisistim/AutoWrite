@@ -19,6 +19,10 @@ What I do to create an AutoWrite is add a tab to the Write node where I break do
 
 Since each facility creates their own file structure, I have set it up for my own structure and I leave it to you to parse your own paths for your facility.
 
+## Important note:
+
+Because this node creates paths that don't yet exist on the filesystem, you'll want to implement the beforeRender callback listed in the Nuke manual (page 575 for Nuke 6.1v2.) That way your auto-generated output paths get auto-created on render and life stays groovy.
+
 ## LICENSE
 
 Copyright (c) 2010 Tim BOWMAN
