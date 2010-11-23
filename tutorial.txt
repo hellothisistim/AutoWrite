@@ -1,0 +1,37 @@
+The tutorial
+
+How to build an Automatic Write node.
+
+Generally, most of the information needed for the output of a Nuke script is contained in it's name. We can reduce manual name-changing on behalf of comp artists and simultaneously increase consistency by creating a Write node that creates (and updates) it's own output path by parsing the script's name. I call a Write node that's customized in this way an Auto-Write node. Instead of creating a Gizmo for this, I find it simpler to create a Python script that creates and customizes an ordinary Write node. This is how I set it up.
+
+First, we drop the Write node that will become our AutoWrite.
+w= nuke.createNode('Write', inpanel=False)
+
+Then, we look for AutoWrites that we've previously made (if any) so that our new one can have a unique name.
+count = 1
+while nuke.exists('AutoWrite' + str(count)):
+    count += 1
+w.knob('name').setValue('AutoWrite' + str(count))
+
+Most projects at most facilities will have a standard set of path fragments. My list includes: project root, sequence name (or abbreviation), shot name. We will create a new tab  on the Write node to help us isolate each fragment so we can easily re-assemble them for the output path. This tab will contain knobs for each path fragment. 
+
+t = nuke.Tab_Knob("Path Fragments")
+w.addKnob(t)
+w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', ''))
+w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', ''))
+w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', ''))
+w.addKnob(nuke.EvalString_Knob('script', 'Script Name', ''))
+
+If you run this now, you'll get a tab with a bunch of empty knobs. This is usually how I start when I'm setting up a new show. I suck at TCL expressions, so I use the trial-and-error technique for chopping up my script path into the appropriate fragments. And for that technique you need feedback about what your expression is doing. For that reason, I use the AutoWrite's label to display the output of the individual fragment knobs as well as the full output path.
+
+feedback = """
+Output Path: [value file]
+
+Project Root: [value proj_root]
+Sequence: [value seq]
+Shot Name: [value shot]
+Script Name: [value script]
+"""
+w.knob('label').setValue(feedback)
+
+
