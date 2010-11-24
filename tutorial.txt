@@ -1,78 +1,82 @@
-The tutorial
+# How to build an Automatic Write node.
 
-How to build an Automatic Write node.
-
-Generally, most of the information needed for the output of a Nuke script is contained in it's name. We can reduce manual name-changing on behalf of comp artists and simultaneously increase consistency by creating a Write node that creates (and updates) it's own output path by parsing the script's name. I call a Write node that's customized in this way an Auto-Write node. Instead of creating a Gizmo for this, I find it simpler to create a Python script that creates and customizes an ordinary Write node. This is how I set it up.
+Generally, most of the information needed for the output of a Nuke script is contained in it's name. We can reduce manual name-changing on behalf of comp artists and simultaneously increase consistency by creating a Write node that creates (and updates) it's own output path by parsing the script's name. I call a Write node that's customized in this way an AutoWrite node. We're only adding a little functionality to a Write node, so instead of wrapping it in a gizmo, I find it simpler to create a Python script. This is how I set it up.
 
 First, we drop the Write node that will become our AutoWrite.
-w= nuke.createNode('Write', inpanel=False)
+
+    w = nuke.createNode('Write', inpanel=True)
 
 Then, we look for AutoWrites that we've previously made (if any) so that our new one can have a unique name.
-count = 1
-while nuke.exists('AutoWrite' + str(count)):
-    count += 1
-w.knob('name').setValue('AutoWrite' + str(count))
 
-Most projects at most facilities will have a standard set of path fragments. My list includes: project root, sequence name (or abbreviation), shot name. We will create a new tab  on the Write node to help us isolate each fragment so we can easily re-assemble them for the output path. This tab will contain knobs for each path fragment. 
+    count = 1
+    while nuke.exists('AutoWrite' + str(count)):
+        count += 1
+    w.knob('name').setValue('AutoWrite' + str(count))
 
-t = nuke.Tab_Knob("Path Fragments")
-w.addKnob(t)
-w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', ''))
-w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', ''))
-w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', ''))
-w.addKnob(nuke.EvalString_Knob('script', 'Script Name', ''))
+Most projects at most facilities will have a standard set of path fragments. My list includes: project root, sequence name (or abbreviation), shot name. Feel free to add your own. We will create a new tab  on the Write node to help us isolate each fragment so we can easily re-assemble them for the output path. This tab will contain knobs for each path fragment. 
+
+    t = nuke.Tab_Knob("Path Fragments")
+    w.addKnob(t)
+    w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', ''))
+    w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', ''))
+    w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', ''))
+    w.addKnob(nuke.EvalString_Knob('script', 'Script Name', ''))
 
 If you run this now, you'll get a tab with a bunch of empty knobs. This is usually how I start when I'm setting up a new show. I suck at TCL expressions, so I use the trial-and-error technique for chopping up my script path into the appropriate fragments. And for that technique you need feedback about what your expression is doing. For that reason, I use the AutoWrite's label to display the output of the individual fragment knobs as well as the full output path.
 
-feedback = """
-Output Path: [value file]
-
-Project Root: [value proj_root]
-Sequence: [value seq]
-Shot Name: [value shot]
-Script Name: [value script]
-"""
-w.knob('label').setValue(feedback)
+    feedback = """
+    Output Path: [value file]
+    
+    Project Root: [value proj_root]
+    Sequence: [value seq]
+    Shot Name: [value shot]
+    Script Name: [value script]
+    """
+    w.knob('label').setValue(feedback)
 
 The next step is to figure out what expressions you need to use in the path fragments tab to hack your useful bits out of your path. Here's what a common path loks like for me:
 
-/Volumes/PICO/show/testproj/abc/abc123/nuke/abc123_comp_v01.nk
+    /Volumes/PICO/show/testproj/abc/abc123/nuke/abc123_comp_v01.nk
 
-And this is what I use to create each chunk:
+And these are the expressions I use to create each chunk:
 
 Project Root: 
 In this case, the show root directory consists of the first 5 path components, so I can just split them, limit the range and re-join.  
 
-[join [lrange [split [value root.name] / ] 0 4 ] / ]
+    [join [lrange [split [value root.name] / ] 0 4 ] / ]
 
 If your facility uses environment variables, you may be able to use something nicely simple like [getenv SHOW_DIR].
 
 Path component #6 is my sequence abbreviation, so Sequence goes like this:
 
-[lrange [split [value root.name] / ] 5 5 ]
+    [lrange [split [value root.name] / ] 5 5 ]
 
 Repeat that idea for Shot Name:
 
-[lrange [split [value root.name] / ] 6 6 ]
+    [lrange [split [value root.name] / ] 6 6 ]
 
 Script Name is nicely simple -- we can just take the last path component and split the extensinon off of it.
 
-[file rootname [file tail [value root.name] ] ]
+    [file rootname [file tail [value root.name] ] ]
 
 Once you've figured these out for your facility, you can put them in the knobs during creation. So now the section that created the tab should look like this:
 
-t = nuke.Tab_Knob("Path Fragments")
-w.addKnob(t)
-w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', '[join [lrange [split [value root.name] / ] 0 4 ] / ]'))
-w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', '[lrange [split [value root.name] / ] 5 5 ]'))
-w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', '[lrange [split [value root.name] / ] 6 6 ]'))
-w.addKnob(nuke.EvalString_Knob('script', 'Script Name', '[file rootname [file tail [value root.name] ] ]'))
+    t = nuke.Tab_Knob("Path Fragments")
+    w.addKnob(t)
+    w.addKnob(nuke.EvalString_Knob('proj_root', 'Project Root', '[join [lrange [split [value root.name] / ] 0 4 ] / ]'))
+    w.addKnob(nuke.EvalString_Knob('seq', 'Sequence', '[lrange [split [value root.name] / ] 5 5 ]'))
+    w.addKnob(nuke.EvalString_Knob('shot', 'Shot Name', '[lrange [split [value root.name] / ] 6 6 ]'))
+    w.addKnob(nuke.EvalString_Knob('script', 'Script Name', '[file rootname [file tail [value root.name] ] ]'))
 
 All that's left is to re-assemble the path components in the file knob:
 
-output_path = "[value proj_root]/[value seq]/[value shot]/comps/[value script]/[value input.width]x[value input.height]/[value script].%04d.dpx"
-w.knob('file').fromScript(output_path)
+    output_path = "[value proj_root]/[value seq]/[value shot]/comps/[value script]/[value input.width]x[value input.height]/[value script].%04d.dpx"
+    w.knob('file').fromScript(output_path)
 
 And that's it. Running this script will create and customize a Write node and set it to follow along as the script's name is updated.
 
+##Here's the catch:
 
+This script creates output paths that often don't exist on the filesystem. This will cause an error from Nuke when you start a render. The solution to this problem is to implement the beforeRender callback (createWriteDir()) described in the Nuke documentation (pg 575 in the Nuke6.1v2 manual.)
+
+My finished version of this script is [here on Nukepedia](http://www.nukepedia.com/gizmos/python-scripts/nodegraph/autowrite/).
